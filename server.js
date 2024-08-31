@@ -1,10 +1,10 @@
-require('dotenv').config();  
+require('dotenv').config();
 
 const express = require('express');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
-app.use(express.json());  
+app.use(express.json());
 
 // Initialize Gemini API
 const apiKey = process.env.GEMINI_API_KEY;
@@ -23,7 +23,7 @@ const generationConfig = {
   responseMimeType: "text/plain",
 };
 
-// Function to get location info
+// Function to get location info and structure the response
 async function getLocationInfo(location) {
   const chatSession = model.startChat({
     generationConfig,
@@ -38,7 +38,30 @@ async function getLocationInfo(location) {
   });
 
   const result = await chatSession.sendMessage(location);
-  return result.response.text();
+  const responseText = result.response.text();
+
+  // Slice and structure the response
+  const structuredResponse = structureResponse(responseText);
+  return structuredResponse;
+}
+
+// Function to structure the response
+function structureResponse(responseText) {
+  // Define delimiters or headers to slice the response
+  const sections = responseText.split('\n\n'); // Split by double newline or any other delimiter
+
+  // Structure the response into an object or any desired format
+  const structuredResponse = {
+    geographicalOverview: sections[0] || '',
+    culturalAndHistoricalSignificance: sections[1] || '',
+    majorAttractions: sections[2] || '',
+    localCuisineAndDiningOptions: sections[3] || '',
+    activitiesAndExperiences: sections[4] || '',
+    practicalInformation: sections[5] || '',
+    additionalInsights: sections[6] || ''
+  };
+
+  return structuredResponse;
 }
 
 app.post('/chat', async (req, res) => {
@@ -49,7 +72,7 @@ app.post('/chat', async (req, res) => {
     }
 
     const response = await getLocationInfo(message);
-    res.send({ response });
+    res.send(response);
   } catch (error) {
     res.status(500).send({ error: error.message });
   }
